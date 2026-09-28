@@ -91,11 +91,7 @@ disagrees between the standalone hand URDF (-0.610865) and the G1 model
 
 Unitree ships no standalone MJCF for the Dex3-1; the only MuJoCo version of the
 hand is welded to the wrist inside `g1_29dof_with_hand_rev_1_0.xml`. So
-`dex3_1_{l,r}.xml` are generated from the vendored URDFs:
-
-```bash
-python tools/make_dex3_mjcf.py
-```
+`dex3_1_{l,r}.xml` were generated from the vendored URDFs.
 
 The palm is the root body, fixed to the world, so the hand can be attached to a
 wrist or given a `<freejoint/>`. Actuators are plain force motors with the URDF
@@ -104,21 +100,13 @@ deliberately not modelled.
 
 ## Using these files
 
-```bash
-python tools/view.py --list                                          # what is vendored
-python tools/view.py assets/g1_description/g1_29dof_with_hand_rev_1_0.xml
-python tools/view.py assets/dex3_1_description/scene.xml
-python tools/check_assets.py                                         # everything parses
-```
-
 Two things that will bite otherwise:
 
 **MuJoCo cannot load the URDFs directly.** Each URDF carries
 `<mujoco><compiler meshdir="meshes"/></mujoco>` while its own mesh filenames
 already begin with `meshes/`, so MuJoCo looks under `meshes/meshes/` and fails.
 This is upstream's quirk and we keep it so the files stay unmodified. ROS and
-Pinocchio load them as-is; `tools/view.py` works around it with a temporary copy.
-Use the `.xml` files with MuJoCo.
+Pinocchio load them as-is. Use the `.xml` files with MuJoCo.
 
 **The G1 MJCFs already contain a scene.** Both `g1_*.xml` files define their own
 floor, light and skybox, so they open in the viewer as-is and there is no

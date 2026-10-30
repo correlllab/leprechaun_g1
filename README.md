@@ -6,9 +6,11 @@ Dex3-1 dexterous hands. University of Notre Dame.
 ## Layout
 
 ```
-assets/     URDF and MuJoCo models for the G1 29 DoF and the Dex3-1 hands
-docs/       bring-up notes and our unit's details
-tools/      read the robot's state
+assets/          URDF and MuJoCo models for the G1 29 DoF and the Dex3-1 hands
+docs/            bring-up notes and our unit's details
+tools/           read the robot's state
+sim2sim_rl/      unitree_rl_lab's walking policy in MuJoCo, in Python
+real_deploy_rl/  the same policy on the robot, and the config both share
 ```
 
 ## Quick start

@@ -1,0 +1,31 @@
+# Settings for unitree_rl_lab's G1 walking policy, shared by
+# sim2sim_rl/sim2sim.py and real_deploy_rl/deploy_real.py, so the sim runs
+# what the robot runs. Every key is required and an unknown key is an error.
+
+# the policy (exported/policy.onnx and params/deploy.yaml), relative to this file
+policy_dir: ../sim2sim_rl/policy/velocity_v0
+
+# Velocity command limits in the base frame: vx and vy in m/s, yaw in rad/s.
+# The sim clips --cmd to them; on the robot a full stick gives the limit. Each
+# must include 0 and stay inside the policy's trained ranges in deploy.yaml
+# (vx -0.5 to 1.0, vy -0.3 to 0.3, yaw -0.2 to 0.2); the loader refuses
+# anything wider. Training sampled yaw only within -0.1 to 0.1, and in MuJoCo
+# the policy stands still below about 0.27 m/s forward and 0.3 m/s sideways.
+commands:
+  vx: [-0.5, 0.5]
+  vy: [-0.3, 0.3]
+  yaw: [-0.2, 0.2]
+
+# g1_ctrl's safety behaviour
+fall_tilt: 1.0   # rad from upright: past this the policy stops and the motors go Passive
+passive_kd: 3.0  # Passive: every motor kp 0 and this kd
+
+# the real robot only
+robot:
+  interface: enp130s0     # the laptop's wired port to the robot
+  domain_id: 0            # the robot's DDS domain
+  control_dt: 0.002       # s between rt/lowcmd writes (500 Hz)
+  stand_seconds: 3.0      # Stand: ramp from the measured joints to the default pose
+  state_timeout: 0.1      # s without a new rt/lowstate before going Passive
+  stick_deadzone: 0.05    # stick values below this read as 0
+  exit_passive_seconds: 1.0  # Passive sent this long on Ctrl+C before exiting

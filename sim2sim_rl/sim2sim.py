@@ -8,6 +8,7 @@ real_deploy_rl/config.yaml, the file the real deploy reads.
     python sim2sim.py --cmd 0.5 0 0                     # walk forward at 0.5 m/s
     python sim2sim.py --headless --seconds 10 --cmd 0.5 0 0
     python sim2sim.py --hands                           # the model with both Dex3-1 hands
+    python sim2sim.py --seconds 12 --cmd 0.5 0 0.2 --record walk.mp4   # headless, 25 fps video
 """
 
 import argparse
@@ -26,6 +27,8 @@ SIM_DT = 0.002
 ARMATURE = 0.01  # every joint's armature in training (unitree.py); the MJCF sets none
 START_HEIGHT = 0.8  # m, the pelvis height training resets to
 SETTLE = 3.0  # s left out of the summary
+VIDEO_SIZE = (640, 360)  # width, height
+VIDEO_EVERY = 2  # policy steps per video frame: 25 fps
 
 
 def main():
@@ -36,7 +39,10 @@ def main():
     parser.add_argument("--seconds", type=float, help="stop after this long (default: 10 headless, until closed)")
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--hands", action="store_true", help="use g1_29dof_with_hand_rev_1_0.xml")
+    parser.add_argument("--record", metavar="MP4",
+                        help="write a video following the pelvis (OpenCV's MPEG-4); runs headless")
     args = parser.parse_args()
+    args.headless = args.headless or bool(args.record)
     seconds = args.seconds if args.seconds is not None else (10.0 if args.headless else float("inf"))
 
     xml = "g1_29dof_with_hand_rev_1_0.xml" if args.hands else "g1_29dof_rev_1_0.xml"
@@ -107,8 +113,24 @@ def main():
             print(f"t={t:5.1f}  pelvis z={z:.3f}  vx={vx:+.2f}  vy={vy:+.2f}  yaw rate={wz:+.2f}")
 
     if args.headless:
+        if args.record:
+            import cv2
+
+            renderer = mujoco.Renderer(model, height=VIDEO_SIZE[1], width=VIDEO_SIZE[0])
+            camera = mujoco.MjvCamera()
+            camera.type = mujoco.mjtCamera.mjCAMERA_TRACKING
+            camera.trackbodyid = model.body("pelvis").id
+            camera.distance, camera.azimuth, camera.elevation = 3.0, 135.0, -15.0
+            fps = round(1.0 / (policy.step_dt * VIDEO_EVERY))
+            writer = cv2.VideoWriter(args.record, cv2.VideoWriter_fourcc(*"mp4v"), fps, VIDEO_SIZE)
         while data.time < seconds and fell_at is None:
             control_step()
+            if args.record and len(log) % VIDEO_EVERY == 0:
+                renderer.update_scene(data, camera)
+                writer.write(renderer.render()[:, :, ::-1])  # RGB to OpenCV's BGR
+        if args.record:
+            writer.release()
+            print(f"video: {args.record}")
     else:
         with mujoco.viewer.launch_passive(model, data) as viewer:
             while viewer.is_running() and data.time < seconds:
